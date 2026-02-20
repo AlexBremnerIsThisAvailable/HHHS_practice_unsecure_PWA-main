@@ -3,8 +3,20 @@ import sqlite3
 import os
 import time
 from waitress import serve
+from dotenv import load_dotenv
+
 
 app = Flask(__name__)
+
+
+load_dotenv() #this gives access .env file
+
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+
+
+
+
+
 
 # ---------------------------------------------------------
 # SESSION MANAGEMENT VULNERABILITY
@@ -12,8 +24,11 @@ app = Flask(__name__)
 # Hardcoded secret key.
 # If an attacker obtains this key, they can forge session cookies.
 # Proper systems store this securely in environment variables. 
-# ----------------------------------------------------------
-app.secret_key = "insecure-secret-key"
+# ---------------------------------------------------------
+#completed
+print("go to the link shown below to reach your stupid website")
+print("http://localhost:8000/")
+
 
 
 @app.route('/')
@@ -39,8 +54,10 @@ def login_validation():
     # password: anything
     # This would log them in without knowing credentials.
     # ---------------------------------------------------------
-    query = f"SELECT * FROM USERS WHERE email = '{email}' AND password = '{password}'"
-    user = cursor.execute(query).fetchall()
+    #completed
+
+    query = "SELECT * FROM USERS WHERE email = ? AND password = ?"
+    user = cursor.execute(query, (email, password)).fetchall()
 
     # ---------------------------------------------------------
     # SIDE CHANNEL ATTACK (Timing Attack)
@@ -143,10 +160,11 @@ def add_user():
         # Example:
         # fname = Robert'); DROP TABLE USERS;--
         # ---------------------------------------------------------
-        cursor.execute(
-            f"INSERT INTO USERS(first_name,last_name,email,password) "
-            f"VALUES('{fname}','{lname}','{email}','{password}')"
-        )
+        #completed
+        query = "INSERT INTO USERS(first_name, last_name, email, password) VALUES(?, ?, ?, ?)"
+        
+        cursor.execute(query, (fname, lname, email, password))
+
         connection.commit()
         connection.close()
 
