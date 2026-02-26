@@ -1,4 +1,5 @@
 import sqlite3
+import bcrypt
 
 connection = sqlite3.Connection('LoginData.db')
 cursor = connection.cursor() 

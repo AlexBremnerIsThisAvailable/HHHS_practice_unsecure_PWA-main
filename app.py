@@ -4,6 +4,8 @@ import os
 import time
 from waitress import serve
 from dotenv import load_dotenv
+import bcrypt
+
 
 
 app = Flask(__name__)
@@ -23,7 +25,7 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 # ---------------------------------------------------------
 # Hardcoded secret key.
 # If an attacker obtains this key, they can forge session cookies.
-# Proper systems store this securely in environment variables. 
+# Proper systems store this securely in environment variables.
 # ---------------------------------------------------------
 #completed
 print("go to the link shown below to reach your stupid website")
@@ -65,8 +67,9 @@ def login_validation():
     # This artificial delay creates measurable timing differences.
     # Attackers could measure response times to guess valid emails.
     # ---------------------------------------------------------
+    #completed
     if len(user) > 0:
-        time.sleep(0.1)  # shorter delay
+        time.sleep(1)  # shorter delay
     else:
         time.sleep(1)  # longer delay reveals login failure timing
 
@@ -79,6 +82,7 @@ def login_validation():
         # No hashing, no salting.
         # If DB is leaked, all passwords are exposed.
         # ---------------------------------------------------------
+    
 
         # ---------------------------------------------------------
         # SESSION MANAGEMENT VULNERABILITY
@@ -122,7 +126,7 @@ def home():
     # ?fname=<script>alert('Hacked')</script>
     # This would execute JavaScript in the victim's browser.
     # ---------------------------------------------------------
-
+    
     return render_template('home.html', fname=fname, lname=lname, email=email)
 
 
