@@ -58,8 +58,11 @@ def login_validation():
     # ---------------------------------------------------------
     #completed
 
-    query = "SELECT * FROM USERS WHERE email = ? AND password = ?"
-    user = cursor.execute(query, (email, password)).fetchall()
+    query = "SELECT * FROM USERS WHERE email = ?"
+    user = cursor.execute(query, (email,)).fetchone()
+    connection.close()
+
+    time.sleep(1)
 
     # ---------------------------------------------------------
     # SIDE CHANNEL ATTACK (Timing Attack)
@@ -68,12 +71,12 @@ def login_validation():
     # Attackers could measure response times to guess valid emails.
     # ---------------------------------------------------------
     #completed
-    if len(user) > 0:
-        time.sleep(1)  # shorter delay
-    else:
-        time.sleep(1)  # longer delay reveals login failure timing
+    if user and bcrypt.checkpw(password.encode('utf-8'), user[3]):
+        session['user'] = email
+        return redirect(f'/home?fname={user[0]}&lname={user[1]}&email={user[2]}')
+    
+    return redirect('/')
 
-    if len(user) > 0:
 
         # ---------------------------------------------------------
         # BROKEN AUTHENTICATION
@@ -90,11 +93,7 @@ def login_validation():
         # Storing email directly in session without regeneration.
         # Session fixation possible.
         # ---------------------------------------------------------
-        session['user'] = email
-
-        return redirect(f'/home?fname={user[0][0]}&lname={user[0][1]}&email={user[0][2]}')
-    else:
-        return redirect('/')
+        
 
 
 @app.route('/signUp')
@@ -131,48 +130,37 @@ def home():
 
 
 @app.route('/add_user', methods=['POST'])
-def add_user():
 
+
+
+def add_user():
     fname = request.form.get('fname')
     lname = request.form.get('lname')
     email = request.form.get('email')
     password = request.form.get('password')
 
+
+    hashed_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+
     connection = sqlite3.connect('LoginData.db')
     cursor = connection.cursor()
 
-    # ---------------------------------------------------------
-    # RACE CONDITION
-    # ---------------------------------------------------------
-    # This check-then-insert pattern is unsafe.
-    # If two users register the same email simultaneously,
-    # both may pass the check before either inserts.
-    # This creates duplicate accounts.
-    # Proper fix: UNIQUE constraint + transaction handling.
-    # ---------------------------------------------------------
-    ans = cursor.execute(f"SELECT * FROM USERS WHERE email = '{email}'").fetchall()
+
+    ans = cursor.execute("SELECT * FROM USERS WHERE email = ?", (email,)).fetchall()
 
     if len(ans) > 0:
         connection.close()
-        return render_template('login.html')
+        return render_template('login.html', error="User already exists")
     else:
 
-        # ---------------------------------------------------------
-        # SQL INJECTION (again)
-        # ---------------------------------------------------------
-        # Attacker could inject SQL into fname/lname fields.
-        # Example:
-        # fname = Robert'); DROP TABLE USERS;--
-        # ---------------------------------------------------------
-        #completed
         query = "INSERT INTO USERS(first_name, last_name, email, password) VALUES(?, ?, ?, ?)"
-        
-        cursor.execute(query, (fname, lname, email, password))
+        cursor.execute(query, (fname, lname, email, hashed_pw))
 
         connection.commit()
         connection.close()
 
         return render_template('login.html')
+
 
 
 @app.route('/redirect_me')
@@ -225,3 +213,13 @@ def transfer_money():
 
 if __name__ == '__main__':
     serve(app, host="0.0.0.0", port=8000)
+
+
+
+#------------------------------------------------------
+#PROBLEM LIST
+#------------------------------------------------------
+#SQL INJECTION-STATUS COMPLETE
+#SESSION MANAGEMENT-STATUS COMPLETE
+#SIDE CHANNEL ATTACK-STATUS COMPLETE
+#------------------------------------------------------
