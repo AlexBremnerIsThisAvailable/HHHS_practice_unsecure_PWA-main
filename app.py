@@ -1,10 +1,12 @@
-from flask import Flask, render_template, request, redirect, session, send_file
+from flask import Flask, render_template, request, redirect, session, send_file, abort
 import sqlite3
 import os
 import time
 from waitress import serve
 from dotenv import load_dotenv
 import bcrypt
+from urllib.parse import urlparse, urljoin
+
 
 
 
@@ -176,6 +178,17 @@ def add_user():
 
 @app.route('/redirect_me')
 def redirect_me():
+    next_url = request.args.get('next')
+    
+    # FIX: Validate that the URL is local to your domain
+    if next_url:
+        ref_url = urlparse(request.host_url)
+        test_url = urlparse(urljoin(request.host_url, next_url))
+        if test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc:
+            return redirect(next_url)
+            
+    return abort(400) # Reject external or missing URLs
+
 
     # ---------------------------------------------------------
     # OPEN / INVALID REDIRECT
@@ -185,12 +198,24 @@ def redirect_me():
     # /redirect_me?next=https://malicious-site.com
     # Victims trust the domain and get redirected to phishing site.
     # ---------------------------------------------------------
-    next_url = request.args.get('next')
-    return redirect(next_url)
-
 
 @app.route('/download')
 def download():
+    filename = request.args.get('file')
+    if not filename:
+        return abort(404)
+
+    # FIX: Define a specific directory and prevent ".." escapes
+    # Ensure you have a folder named 'static' or 'uploads'
+    base_dir = os.path.join(app.root_path, 'static') 
+    filepath = os.path.abspath(os.path.join(base_dir, filename))
+
+    # Check if the resulting path is still inside the base directory
+    if not filepath.startswith(base_dir):
+        return "Access Denied", 403
+
+    return send_file(filepath)
+
 
     # ---------------------------------------------------------
     # FILE ATTACK (Path Traversal)
@@ -200,8 +225,6 @@ def download():
     # /download?file=../../../../etc/passwd
     # and retrieve sensitive server files.
     # ---------------------------------------------------------
-    filename = request.args.get('file')
-    return send_file(filename)
 
 
 @app.route('/transfer_money', methods=['POST'])
