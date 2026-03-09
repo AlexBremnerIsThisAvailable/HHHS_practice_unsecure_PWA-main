@@ -72,8 +72,11 @@ def login_validation():
     # ---------------------------------------------------------
     #completed
     if user and bcrypt.checkpw(password.encode('utf-8'), user[3]):
+        
+        session.clear() 
         session['user'] = email
         return redirect(f'/home?fname={user[0]}&lname={user[1]}&email={user[2]}')
+
     
     return redirect('/')
 
@@ -85,7 +88,7 @@ def login_validation():
         # No hashing, no salting.
         # If DB is leaked, all passwords are exposed.
         # ---------------------------------------------------------
-    
+        #completed
 
         # ---------------------------------------------------------
         # SESSION MANAGEMENT VULNERABILITY
@@ -104,6 +107,17 @@ def signUp():
 @app.route('/home')
 def home():
 
+    if 'user' not in session:
+        return redirect('/')
+
+
+    email = session.get('user')
+    fname = request.args.get('fname')
+    lname = request.args.get('lname')
+    
+    return render_template('home.html', fname=fname, lname=lname, email=email)
+
+
     # ---------------------------------------------------------
     # BROKEN AUTHENTICATION
     # ---------------------------------------------------------
@@ -112,10 +126,8 @@ def home():
     # http://site/home?fname=Admin&lname=User&email=admin@email.com
     # and appear logged in.
     # ---------------------------------------------------------
+    #completed
 
-    fname = request.args.get('fname')
-    lname = request.args.get('lname')
-    email = request.args.get('email')
 
     # ---------------------------------------------------------
     # CROSS-SITE SCRIPTING (XSS)
@@ -126,7 +138,6 @@ def home():
     # This would execute JavaScript in the victim's browser.
     # ---------------------------------------------------------
     
-    return render_template('home.html', fname=fname, lname=lname, email=email)
 
 
 @app.route('/add_user', methods=['POST'])
